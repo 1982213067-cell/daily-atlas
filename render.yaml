@@ -15,3 +15,8 @@ services:
         value: production
       - key: NODE_VERSION
         value: "22"
+      # 云库凭证：不在仓库里存值，创建 Blueprint 时由 Render 弹窗让你现场粘贴
+      - key: WB_CLOUD_REST
+        sync: false
+      - key: WB_CLOUD_KEY
+        sync: false

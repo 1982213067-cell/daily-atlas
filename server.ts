@@ -40,12 +40,15 @@ try {
 }
 
 /* ================= 云端持久化（WorkBuddy 云数据库 REST，按模块分表） ================= */
-const CLOUD_REST =
-  process.env.WB_CLOUD_REST ||
-  'https://daily-atlas-cloud.app.workbuddy.host/.cloud/database/rest/wbapp_state';
-const CLOUD_KEY =
-  process.env.WB_CLOUD_KEY ||
-  'wbpk_bpHy7Zk63nyHdOWTTCG7Ti_qDoscOVPNZYxE9Z5NAyN0WipCoL0ndtG';
+// 凭证只从环境变量读取：源码一旦推到公开仓库，写死的 key 等于把整个数据库交出去
+const CLOUD_REST = process.env.WB_CLOUD_REST || '';
+const CLOUD_KEY = process.env.WB_CLOUD_KEY || '';
+
+if (!CLOUD_REST || !CLOUD_KEY) {
+  throw new Error(
+    '缺少 WB_CLOUD_REST / WB_CLOUD_KEY：本地请写在 .env，线上请配到平台环境变量（见 .env.example）'
+  );
+}
 
 // 每个业务模块在云端独立存一行（module 为唯一键），页面按模块读写、互不覆盖
 const MODULE_SLICES: Array<{
@@ -577,6 +580,30 @@ const CURATED_MEDIA = [
 
 async function startServer() {
   const app = express();
+
+  // 跨域：仅当配置了 CORS_ORIGIN 才开启（前后端分开部署时用；同源整站部署留空即可）
+  // 多个来源用英文逗号分隔，允许全部用 *
+  const CORS_ORIGIN = process.env.CORS_ORIGIN || '';
+  if (CORS_ORIGIN) {
+    const allowed = CORS_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean);
+    const allowAll = allowed.includes('*');
+    app.use((req: Request, res: Response, next: () => void) => {
+      const origin = req.headers.origin;
+      if (origin && (allowAll || allowed.includes(origin))) {
+        res.setHeader('Access-Control-Allow-Origin', allowAll ? '*' : origin);
+        res.setHeader('Vary', 'Origin');
+        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.setHeader('Access-Control-Max-Age', '86400');
+      }
+      // 预检必须在鉴权之前放行，否则 401 会让浏览器直接判跨域失败
+      if (req.method === 'OPTIONS') {
+        res.sendStatus(204);
+        return;
+      }
+      next();
+    });
+  }
 
   // 访问口令：默认不启用（本机/私人链接直接打开）
   // 如需重新开启，设置环境变量 APP_PASSWORD 即可，无需改代码
