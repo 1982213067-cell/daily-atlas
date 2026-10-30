@@ -1,0 +1,16 @@
+{
+  "name": "日常集 · 生活工作台",
+  "short_name": "日常集",
+  "description": "记账、习惯、健康、日程、书影音…集成式生活工作台，数据在线存储、跨设备同步。",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f0e8",
+  "theme_color": "#4d3045",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

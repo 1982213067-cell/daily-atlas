@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>日常集 · 手机端预览</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #efe9df;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 40px;
+    color: #29251f;
+  }
+  h1 { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+  .sub { font-size: 12px; color: #746d63; margin: 0 0 18px; }
+  .device {
+    width: 390px;
+    height: 844px;
+    background: #1c1c1e;
+    border-radius: 44px;
+    padding: 10px;
+    box-shadow: 0 18px 50px rgba(41, 37, 31, .28);
+    position: relative;
+  }
+  .notch {
+    position: absolute;
+    top: 10px; left: 50%;
+    transform: translateX(-50%);
+    width: 150px; height: 26px;
+    background: #1c1c1e;
+    border-radius: 0 0 16px 16px;
+    z-index: 3;
+  }
+  .screen {
+    width: 100%;
+    height: 100%;
+    background: #fffdfa;
+    border-radius: 34px;
+    overflow: hidden;
+    position: relative;
+  }
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    background: #fffdfa;
+  }
+  .loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: #fffdfa;
+    font-size: 13px;
+    color: #8b8377;
+    z-index: 2;
+  }
+  .loading.hide { display: none; }
+  .spinner {
+    width: 26px; height: 26px;
+    border: 3px solid #e3dbce;
+    border-top-color: #b65f42;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .err { color: #b6492f; line-height: 1.8; text-align: center; padding: 0 24px; }
+  .err button {
+    margin-top: 8px;
+    border: 1px solid #b6492f; background: #fff; color: #b6492f;
+    padding: 6px 16px; border-radius: 999px; font-size: 12px; cursor: pointer;
+  }
+  .hint {
+    margin-top: 18px;
+    font-size: 12px;
+    color: #746d63;
+    text-align: center;
+    line-height: 1.7;
+    max-width: 420px;
+  }
+  .hint a.online {
+    display: inline-block;
+    margin: 8px 0 6px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: #b65f42;
+    color: #fffdfa;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .bar {
+    display: flex; gap: 8px; margin-bottom: 14px;
+  }
+  .bar button {
+    border: 1px solid #ded5c8; background: #fffdfa; color: #29251f;
+    padding: 7px 14px; border-radius: 999px; font-size: 12px; cursor: pointer;
+  }
+  .bar button:hover { border-color: #b65f42; color: #b65f42; }
+  @media (max-width: 460px) {
+    .device { width: 100%; height: 78vh; }
+  }
+</style>
+</head>
+<body>
+  <h1>日常集 · 手机端预览</h1>
+  <p class="sub">iPhone 尺寸（390 × 844）真实渲染，可在页面内正常点击操作</p>
+
+  <div class="bar">
+    <button onclick="go('dashboard')">今日总览</button>
+    <button onclick="go('money')">记账</button>
+    <button onclick="go('habits')">习惯</button>
+    <button onclick="go('health')">健康档案</button>
+    <button onclick="go('wishlist')">待打卡</button>
+    <button onclick="go('weather')">天气</button>
+  </div>
+
+  <div class="device">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div id="loadingText">正在加载应用…</div>
+      </div>
+      <iframe id="app" src="/" title="日常集手机端"></iframe>
+    </div>
+  </div>
+
+  <p class="hint">
+    这是真实运行的页面，不是截图 —— 可以直接在里面点、滑动、打卡。<br />
+    换页请用上面的按钮，也可以直接点屏幕里的标签栏。<br />
+    <a class="online" href="https://workbuddy.link/p/2Jnp6xMdNonKZ4qUTV2t52" target="_blank" rel="noopener">
+      在真机（手机浏览器）上使用 → 打开在线版
+    </a><br />
+    在线版数据在云端资料库，手机/电脑同一份；加到手机主屏即可当 App 用。
+  </p>
+
+<script>
+  var f = document.getElementById('app');
+  var loading = document.getElementById('loading');
+  var loadingText = document.getElementById('loadingText');
+  var loaded = false;
+
+  function done() {
+    loaded = true;
+    loading.classList.add('hide');
+  }
+  function fail(msg) {
+    if (loaded) return;
+    loading.innerHTML = '<div class="err">' + msg +
+      '<br /><button onclick="retry()">重新加载</button></div>';
+  }
+  function retry() {
+    loading.innerHTML = '<div class="spinner"></div><div>正在加载应用…</div>';
+    f.src = f.src;
+    setTimeout(function () { if (!loaded) fail('加载超时。'); }, 10000);
+  }
+
+  f.addEventListener('load', function () {
+    // iframe load 只代表文档就绪，给 React 一点挂载时间
+    setTimeout(done, 800);
+  });
+  f.addEventListener('error', function () {
+    fail('页面加载失败。请确认本地服务 <b>npm run dev</b> 正在运行（端口 3000）。');
+  });
+  setTimeout(function () {
+    if (!loaded) fail('加载较慢或失败。请确认本地服务正在运行（端口 3000）。');
+  }, 12000);
+
+  function go(mod) {
+    try {
+      // 同源，直接改 hash，App 已监听 hashchange，无需整页重载
+      f.contentWindow.location.hash = '/' + mod;
+    } catch (e) {
+      f.src = '/#/' + mod;
+    }
+  }
+</script>
+</body>
+</html>

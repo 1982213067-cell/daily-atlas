@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: daily-atlas
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    autoDeploy: true
+    # NODE_ENV=production 会让 npm 跳过 devDependencies，
+    # 而本项目运行时要用到 tsx 和 vite，所以必须显式 --production=false
+    buildCommand: npm install --production=false && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"

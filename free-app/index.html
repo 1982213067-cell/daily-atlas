@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#f5f0e8" />
+<title>日常集 · 免登录版</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    background: #efe9df; color: #29251f; font-size: 14px; line-height: 1.6;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .pagewrap { max-width: 640px; margin: 0 auto; padding: 0 14px 90px; }
+  #app { display: flex; align-items: flex-start; }
+  #side { display: none; }
+  .greet { display: none; }
+
+  /* ---------- 口令锁 ---------- */
+  #lock {
+    position: fixed; inset: 0; z-index: 100; background: #efe9df;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px;
+  }
+  #lock.hide { display: none; }
+  .logo { width: 56px; height: 56px; border-radius: 16px; background: #b65f42; color: #fff;
+    font-weight: 700; font-size: 26px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+  #lock h1 { font-size: 20px; margin: 0 0 4px; }
+  #lock p { font-size: 12px; color: #746d63; margin: 0 0 22px; }
+  #lock input {
+    width: 220px; padding: 12px 14px; border: 1px solid #ded5c8; border-radius: 12px;
+    background: #fffdfa; font-size: 16px; text-align: center; letter-spacing: 4px; outline: none;
+  }
+  #lock input:focus { border-color: #b65f42; }
+  #lock button { margin-top: 14px; width: 220px; }
+  #lockErr { color: #a3372a; font-size: 12px; margin-top: 10px; min-height: 18px; }
+
+  /* ---------- 头部 ---------- */
+  header { padding: 16px 0 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+  .brand .logo { width: 38px; height: 38px; border-radius: 12px; background: #b65f42; color: #fff;
+    font-weight: 700; font-size: 18px; display: flex; align-items: center; justify-content: center; margin: 0; }
+  h1 { font-size: 17px; margin: 0; font-weight: 700; }
+  .sub { font-size: 11px; color: #746d63; margin: 1px 0 0; }
+  .syncbar { margin-left: auto; font-size: 11px; color: #746d63; display: flex; align-items: center; gap: 6px; }
+  .errbar { flex-basis: 100%; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #c9bfae; display: inline-block; }
+  .dot.ok { background: #4f8a5b; } .dot.err { background: #c0523f; }
+  .dot.loading { background: #d9a441; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+
+  /* ---------- 错误条 ---------- */
+  .errbar { display: none; background: #fdecea; border: 1px solid #f3c9c2; color: #a3372a;
+    border-radius: 12px; padding: 10px 12px; font-size: 12px; margin-top: 10px; align-items: center; gap: 10px; }
+  .errbar.show { display: flex; }
+  .errbar button { margin-left: auto; flex: none; }
+
+  /* ---------- 标签栏 ---------- */
+  .tabs { display: flex; gap: 6px; overflow-x: auto; padding: 12px 0 4px; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: none; border: 1px solid #ded5c8; background: #fffdfa; color: #554b42;
+    padding: 7px 14px; border-radius: 999px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .tab.on { background: #b65f42; border-color: #b65f42; color: #fff; font-weight: 700; }
+
+  /* ---------- 统计 ---------- */
+  .stats { display: flex; gap: 8px; margin: 10px 0 12px; flex-wrap: wrap; }
+  .stat { flex: 1; min-width: 90px; background: #fffdfa; border: 1px solid #ded5c8; border-radius: 14px; padding: 10px 12px; }
+  .stat span { display: block; font-size: 11px; color: #746d63; }
+  .stat strong { display: block; font-size: 17px; font-weight: 700; margin-top: 2px; }
+
+  /* ---------- 卡片 / 表单 ---------- */
+  .card { background: #fffdfa; border: 1px solid #ded5c8; border-radius: 16px; padding: 14px; margin-bottom: 14px; }
+  .card h2 { font-size: 14px; margin: 0 0 8px; font-weight: 700; }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+  label.f { display: block; }
+  label.f.wide { grid-column: 1 / -1; }
+  label.f span { display: block; font-size: 11px; color: #746d63; margin-bottom: 3px; }
+  input, select, textarea { width: 100%; padding: 9px 10px; border: 1px solid #ded5c8; border-radius: 10px;
+    background: #faf7f2; color: #29251f; font-size: 13px; font-family: inherit; min-height: 38px; outline: none; }
+  textarea { min-height: 56px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { border-color: #b65f42; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { border: 1px dashed #d3c8b6; background: #faf7f2; color: #6e6255; border-radius: 999px;
+    padding: 4px 10px; font-size: 11px; cursor: pointer; }
+  .actions { display: flex; gap: 8px; margin-top: 12px; }
+  button.primary { background: #b65f42; color: #fff; border: 0; border-radius: 999px; padding: 10px 20px;
+    font-size: 13px; font-weight: 700; cursor: pointer; min-height: 40px; }
+  button.primary:disabled { opacity: .5; }
+  button.ghost { background: #fffdfa; border: 1px solid #ded5c8; color: #6e6255; border-radius: 999px;
+    padding: 8px 16px; font-size: 12px; cursor: pointer; min-height: 38px; }
+  .msg { margin-top: 10px; font-size: 12px; border-radius: 10px; padding: 8px 10px; display: none; }
+  .msg.err { display: block; background: #fdecea; color: #a3372a; border: 1px solid #f3c9c2; }
+  .msg.ok { display: block; background: #eaf3ec; color: #3d7350; border: 1px solid #c6dfcd; }
+
+  /* ---------- 列表 ---------- */
+  .state { text-align: center; padding: 26px 12px; color: #746d63; font-size: 13px; }
+  .state .spin { width: 22px; height: 22px; border: 2px solid #ded5c8; border-top-color: #b65f42;
+    border-radius: 50%; margin: 0 auto 10px; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg) } }
+  ul.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  li.row { background: #faf7f2; border: 1px solid #ded5c8; border-radius: 12px; padding: 10px 12px;
+    display: flex; gap: 10px; align-items: flex-start; }
+  li.row .main { flex: 1; min-width: 0; }
+  li.row .t { font-weight: 600; font-size: 13px; word-break: break-word; }
+  li.row .m { font-size: 11px; color: #746d63; margin-top: 2px; word-break: break-word; }
+  li.row .n { font-size: 12px; color: #554b42; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+  li.row.done .t { text-decoration: line-through; color: #8a8073; }
+  .tick { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #c9bfae; background: #fff;
+    color: transparent; font-size: 13px; cursor: pointer; flex: none; display: flex; align-items: center; justify-content: center; padding: 0; }
+  .tick.on { background: #4f8a5b; border-color: #4f8a5b; color: #fff; }
+  .del { border: 0; background: transparent; color: #b8ab99; cursor: pointer; font-size: 16px; padding: 2px 4px; flex: none; line-height: 1; }
+  .amt { font-weight: 700; color: #b65f42; } .amt.in { color: #4f8a5b; }
+  .tag { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 999px;
+    background: #ede6dc; color: #6e6255; margin-left: 6px; }
+  .tag.stage { background: #e3ede5; color: #3d7350; }
+  footer { text-align: center; font-size: 11px; color: #a09588; padding: 6px 0 16px; }
+
+  /* ---------- 天气 ---------- */
+  .wxhead { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .wxhead h2 { flex: 1; margin: 0; font-size: 15px; }
+  #wxStatus { font-size: 12px; color: #746d63; min-height: 18px; }
+  #wxStatus.err { color: #a3372a; }
+  .wxnow { display: flex; align-items: center; gap: 16px; padding: 10px 4px 2px; }
+  .wxnow .ico { font-size: 46px; line-height: 1; }
+  .wxnow .big { font-size: 42px; font-weight: 700; line-height: 1; }
+  .wxnow .desc { font-size: 15px; font-weight: 600; }
+  .wxnow .meta { font-size: 12px; color: #746d63; margin-top: 4px; }
+  .wxdays { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
+  .wxday { background: #faf7f2; border: 1px solid #ded5c8; border-radius: 12px; padding: 10px 6px; text-align: center; font-size: 12px; }
+  .wxday .e { font-size: 22px; display: block; margin: 2px 0; }
+  .wxday .range { color: #554b42; }
+  .wxday .rain { color: #4f7ea8; font-size: 11px; }
+  @media (max-width: 480px) { .wxdays { grid-template-columns: repeat(3, 1fr); } }
+
+  @media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
+
+  /* ---------- 电脑端宽屏布局（侧边栏版式） ---------- */
+  @media (min-width: 960px) {
+    body { font-size: 15px; }
+    .pagewrap { max-width: none; flex: 1; min-width: 0; padding: 0 26px 36px; }
+    #side {
+      display: flex; flex-direction: column; flex: none; gap: 3px;
+      width: 218px; height: 100vh; position: sticky; top: 0; overflow-y: auto;
+      background: #f6f1e8; border-right: 1px solid #ded5c8; padding: 20px 12px 14px;
+    }
+    .slogo { display: flex; align-items: center; gap: 10px; padding: 0 8px 14px; }
+    .slogo .logo { width: 36px; height: 36px; border-radius: 11px; font-size: 17px; margin: 0; }
+    .slogo b { font-size: 16px; display: block; line-height: 1.3; }
+    .slogo small { display: block; font-size: 10px; color: #a09588; font-weight: 400; }
+    .sitem { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+      border: 0; background: transparent; color: #554b42; font-size: 14px; padding: 9px 12px;
+      border-radius: 12px; cursor: pointer; font-family: inherit; }
+    .sitem:hover { background: #efe8dc; }
+    .sitem.on { background: #b65f42; color: #fff; font-weight: 700; }
+    .sitem .se { font-size: 16px; flex: none; }
+    .sfoot { margin-top: auto; font-size: 10px; color: #a09588; padding: 12px 8px 0; line-height: 1.6; }
+    .brand { display: none; }
+    .greet { display: block; flex: 1; min-width: 0; }
+    .greet h1 { font-size: 21px; margin: 0; }
+    .tabs { display: none; }
+    .stats { margin: 14px 0; }
+    .stat { padding: 14px 16px; border-radius: 16px; }
+    .stat strong { font-size: 20px; }
+    .card { padding: 18px; border-radius: 18px; margin-bottom: 0; }
+    .card h2 { font-size: 15px; }
+    .grid2 { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 14px 20px; align-items: start; }
+    #formCard { grid-column: 1; position: sticky; top: 16px; }
+    #listCard { grid-column: 2; }
+    #weatherCard { grid-column: 1 / -1; }
+    .grid2.dash #listCard { grid-column: 1 / -1; }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    input, select, textarea { font-size: 14px; min-height: 40px; }
+    li.row { padding: 12px 14px; }
+    li.row .t { font-size: 14px; }
+    ul.list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; }
+    ul.list li.row { display: flex; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 口令锁 -->
+<div id="lock">
+  <div class="logo">日</div>
+  <h1>日常集</h1>
+  <p>输入访问口令 · 数据云端保存 · 换设备都在</p>
+  <input id="passInput" type="password" inputmode="numeric" placeholder="访问口令" maxlength="20" />
+  <button class="primary" id="passBtn">进入</button>
+  <div id="lockErr"></div>
+</div>
+
+<div id="app" style="display:none">
+  <aside id="side">
+    <div class="slogo"><div class="logo">日</div><div><b>日常集</b><small>免登录 · 口令版</small></div></div>
+    <nav id="snav"></nav>
+    <div class="sfoot">数据云端保存<br />手机电脑同一链接</div>
+  </aside>
+  <main class="pagewrap">
+  <header>
+    <div class="brand">
+      <div class="logo">日</div>
+      <div>
+        <h1>日常集</h1>
+        <p class="sub">免登录 · 数据云端保存，手机电脑同链接</p>
+      </div>
+    </div>
+    <div class="greet">
+      <h1 id="greetTitle"></h1>
+      <p class="sub" id="greetDate"></p>
+    </div>
+    <div class="syncbar"><span class="dot" id="syncDot"></span><span id="syncText">准备中…</span></div>
+    <div class="errbar" id="errbar"><span id="errText"></span><button class="ghost" id="retryBtn">重试</button></div>
+  </header>
+
+  <div class="tabs" id="tabs"></div>
+  <div class="stats" id="stats"></div>
+
+  <div class="grid2" id="content">
+
+  <div class="card" id="formCard">
+    <h2 id="formTitle">新增记录</h2>
+    <form id="form"></form>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="card" id="listCard">
+    <h2 id="listTitle">记录</h2>
+    <div class="state" id="state"></div>
+    <ul class="list" id="list"></ul>
+  </div>
+
+  <div class="card" id="weatherCard" style="display:none">
+    <div class="wxhead">
+      <h2 id="wxCity">天气</h2>
+      <button class="ghost" id="wxRetry" type="button">重新定位</button>
+    </div>
+    <div id="wxStatus"></div>
+    <div id="wxBody"></div>
+  </div>
+
+  </div>
+
+  <footer>数据即时写入云端 · 失败会明确提示并可重试，不会丢数据</footer>
+  </main>
+</div>
+
+<script src="./index.global.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ================= 云端配置（来自应用 publicConfig） ================= */
+  var ENDPOINT = 'https://daily-atlas-cloud.app.workbuddy.host';
+  var PUBLISHABLE_KEY = 'wbpk_bpHy7Zk63nyHdOWTTCG7Ti_qDoscOVPNZYxE9Z5NAyN0WipCoL0ndtG';
+  var TABLE = 'daily_records';
+  var PASS_SHA256 = '92925488b28ab12584ac8fcaa8a27a0f497b2c62940c8f4fbc8ef19ebc87c43e'; // 默认口令 888888
+
+  var cloud = WorkBuddyCloud.createWorkBuddyCloud({
+    endpoint: ENDPOINT,
+    publishableKey: PUBLISHABLE_KEY,
+  });
+  var db = cloud.database;
+
+  /* ================= 模块定义 ================= */
+  var MODULES = {
+    dashboard: { title: '总览', emoji: '🏠' },
+    weather: { title: '天气', emoji: '⛅' },
+    money: { title: '记账', emoji: '💰', sort: '日期',
+      fields: [
+        { name:'摘要', label:'摘要', ph:'如：午饭简餐' },
+        { name:'类型', label:'类型', type:'select', options:['支出','收入'] },
+        { name:'分类', label:'分类', ph:'如：吃饭' },
+        { name:'金额', label:'金额', type:'number', ph:'0.00' },
+        { name:'日期', label:'日期', type:'date', today:true },
+        { name:'备注', label:'备注', ph:'可选' },
+      ],
+      chips: { 摘要: ['午饭','地铁','奶茶','水果'], 分类: ['吃饭','交通','日用','娱乐'] },
+      doneField: null },
+    habit: { title: '习惯', emoji: '✅', sort: '日期',
+      fields: [
+        { name:'习惯名称', label:'习惯名称', ph:'如：喝水' },
+        { name:'打卡值', label:'打卡值', ph:'如：8 或 12:45' },
+        { name:'日期', label:'日期', type:'date', today:true },
+      ],
+      chips: { 习惯名称: ['喝水','睡觉','运动','看书','冥想','早起'] } },
+    wish: { title: '待打卡', emoji: '📍', sort: '打卡日期',
+      fields: [
+        { name:'名称', label:'名称', ph:'如：大理洱海 / 学壁球' },
+        { name:'分类', label:'分类', ph:'如：旅游点' },
+        { name:'备注', label:'备注', ph:'地址、和谁去、期待理由' },
+      ],
+      chips: { 分类: ['旅游点','美食店','景点','新爱好'], 名称: ['按摩推拿','壁球','游泳','钩针','跳舞'] },
+      doneField: '已完成', doneDate: '打卡日期' },
+    med: { title: '病况', emoji: '🩺', sort: '就诊日期',
+      fields: [
+        { name:'病名', label:'病名', ph:'如：支气管炎' },
+        { name:'分期', label:'分期', ph:'初期 / 中期 / 后期' },
+        { name:'病情说明', label:'病情说明', ph:'此阶段的症状/治疗说明', wide:true },
+        { name:'用药', label:'本期用药', ph:'如：阿莫西林 0.5g 每日3次', wide:true },
+        { name:'医院', label:'医院', ph:'可选' },
+        { name:'就诊日期', label:'就诊日期', type:'date', today:true },
+      ],
+      chips: { 分期: ['初期','中期','后期','康复期'] } },
+    checkup: { title: '体检', emoji: '📋', sort: '日期',
+      fields: [
+        { name:'标题', label:'报告标题', ph:'如：2026年度体检' },
+        { name:'日期', label:'报告日期', type:'date', today:true },
+        { name:'分类', label:'报告分类', type:'select', options:['体检报告','检验报告','检查报告'] },
+        { name:'机构', label:'医院/机构', ph:'如：市人民医院' },
+        { name:'指标摘要', label:'指标摘要', ph:'如：血压 118/76；空腹血糖 5.2', wide:true },
+        { name:'总结建议', label:'总结与建议', ph:'医生结论、复查提醒等', wide:true },
+      ],
+      chips: { 分类: ['体检报告','检验报告','检查报告'] } },
+    men: { title: '经期', emoji: '🌸', sort: '开始日期',
+      fields: [
+        { name:'开始日期', label:'开始日期', type:'date', today:true },
+        { name:'结束日期', label:'结束日期', type:'date' },
+        { name:'症状', label:'症状', ph:'如：腰酸、头痛' },
+        { name:'备注', label:'备注', ph:'可选' },
+      ] },
+    fit: { title: '健身', emoji: '🏃', sort: '日期',
+      fields: [
+        { name:'日期', label:'日期', type:'date', today:true },
+        { name:'运动项目', label:'运动项目', ph:'如：跑步' },
+        { name:'时长', label:'时长', ph:'如：30 分钟' },
+        { name:'消耗', label:'消耗', ph:'如：200 千卡' },
+      ],
+      chips: { 运动项目: ['跑步','快走','瑜伽','力量训练','骑行','游泳','拉伸'] } },
+    plan: { title: '日程', emoji: '🗓', sort: '日期',
+      fields: [
+        { name:'事项', label:'事项', ph:'如：交水电费' },
+        { name:'日期', label:'日期', type:'date', today:true },
+        { name:'时间', label:'时间', ph:'如：09:30' },
+        { name:'优先级', label:'优先级', type:'select', options:['高','中','低'] },
+        { name:'备注', label:'备注', ph:'可选' },
+      ],
+      doneField: '已完成', doneDate: '完成日期' },
+    shop: { title: '待买', emoji: '🛒', sort: '购买日期',
+      fields: [
+        { name:'物品', label:'物品', ph:'如：加湿器' },
+        { name:'分类', label:'分类', ph:'如：家居' },
+        { name:'预算', label:'预算', type:'number', ph:'0.00' },
+        { name:'备注', label:'备注', ph:'可选' },
+      ],
+      chips: { 分类: ['日用','食材','服饰','数码','家居','礼物'] },
+      doneField: '已购', doneDate: '购买日期' },
+    media: { title: '书影音', emoji: '🎬', sort: '日期',
+      fields: [
+        { name:'标题', label:'标题', ph:'书名 / 片名 / 专辑' },
+        { name:'类型', label:'类型', type:'select', options:['书','影','音'] },
+        { name:'状态', label:'状态', type:'select', options:['想看','进行中','已完成'] },
+        { name:'评分', label:'评分', ph:'如：8.5' },
+        { name:'感想', label:'感想', ph:'一句话就够', wide:true },
+        { name:'日期', label:'日期', type:'date', today:true },
+      ] },
+  };
+  var ORDER = ['dashboard','money','habit','wish','med','checkup','men','fit','weather','plan','shop','media'];
+
+  /* ================= 状态 ================= */
+  var S = { current: 'dashboard', rows: {}, loading: {}, error: {}, busy: false };
+
+  /* ================= 工具 ================= */
+  function $(id) { return document.getElementById(id); }
+  function todayStr() {
+    var d = new Date(), m = d.getMonth() + 1, day = d.getDate();
+    return d.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (day < 10 ? '0' + day : day);
+  }
+  function fmtDate(v) { return v ? String(v).slice(0, 10) : ''; }
+  function money(v) { return '¥' + (Number(v) || 0).toFixed(2); }
+  function esc(s) { return String(s == null ? '' : s); }
+  function elx(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text) e.textContent = text;
+    return e;
+  }
+  function setSync(kind, text) {
+    $('syncDot').className = 'dot' + (kind ? ' ' + kind : '');
+    $('syncText').textContent = text;
+  }
+  function showMsg(kind, text) {
+    var box = $('msg');
+    box.className = 'msg ' + kind; box.textContent = text;
+    if (kind === 'ok') setTimeout(function () { if (box.textContent === text) box.className = 'msg'; }, 3000);
+  }
+  function showErr(text) {
+    if (text) { $('errText').textContent = text; $('errbar').classList.add('show'); }
+    else $('errbar').classList.remove('show');
+  }
+  function cacheKey(mod) { return 'rjfree_cache_' + mod; }
+
+  /* ================= 口令锁 ================= */
+  function sha256Hex(str) {
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)).then(function (buf) {
+      return Array.prototype.map.call(new Uint8Array(buf), function (b) {
+        return ('0' + b.toString(16)).slice(-2);
+      }).join('');
+    });
+  }
+  function unlock() {
+    var v = $('passInput').value.trim();
+    if (!v) { $('lockErr').textContent = '请输入口令'; return; }
+    sha256Hex(v).then(function (h) {
+      if (h !== PASS_SHA256) { $('lockErr').textContent = '口令不对，再试试'; return; }
+      try {
+        localStorage.setItem('rjfree_pass_ok', JSON.stringify({ t: Date.now() }));
+      } catch (e) {}
+      $('lock').classList.add('hide');
+      $('app').style.display = '';
+      boot();
+    });
+  }
+  function passOk() {
+    try {
+      var raw = localStorage.getItem('rjfree_pass_ok');
+      if (!raw) return false;
+      var o = JSON.parse(raw);
+      return o && o.t && (Date.now() - o.t < 30 * 86400000);
+    } catch (e) { return false; }
+  }
+
+  /* ================= 数据层 ================= */
+  function load(mod, opts) {
+    opts = opts || {};
+    if (S.loading[mod]) return;
+    // 1) 先渲染本地缓存，绝不白屏
+    if (!S.rows[mod]) {
+      try {
+        var raw = localStorage.getItem(cacheKey(mod));
+        if (raw) S.rows[mod] = JSON.parse(raw);
+      } catch (e) {}
+    }
+    if (S.rows[mod]) renderList(mod);
+    S.loading[mod] = true;
+    if (!opts.silent) setSync('loading', '正在读取云端数据…');
+    db.from(TABLE).select('*').eq('module', mod).order('id', { ascending: false }).limit(500)
+      .then(function (res) {
+        S.loading[mod] = false;
+        if (res.error) {
+          S.error[mod] = '读取失败：' + (res.error.message || '网络异常');
+          setSync('err', '读取失败');
+          renderList(mod);
+          return;
+        }
+        S.error[mod] = '';
+        var rows = (res.data || []).map(function (r) {
+          var d = r.data || {}; d._id = r.id; return d;
+        });
+        S.rows[mod] = rows;
+        try { localStorage.setItem(cacheKey(mod), JSON.stringify(rows)); } catch (e) {}
+        setSync('ok', '已同步');
+        renderList(mod);
+        if (mod === S.current) renderStats(mod);
+        showErr('');
+      })
+      .catch(function (err) {
+        S.loading[mod] = false;
+        S.error[mod] = '读取失败：' + (err && err.message ? err.message : '网络异常');
+        setSync('err', '读取失败');
+        renderList(mod);
+      });
+  }
+
+  function addRow(mod, data, done) {
+    var payload = { module: mod, data: data };
+    db.from(TABLE).insert(payload).select()
+      .then(function (res) {
+        if (res.error) { done(res.error.message || '保存失败'); return; }
+        if (!res.data || !res.data.length) { done('保存被拒绝，请重试'); return; }
+        var d = Object.assign({}, data, { _id: res.data[0].id });
+        S.rows[mod] = [d].concat(S.rows[mod] || []);
+        try { localStorage.setItem(cacheKey(mod), JSON.stringify(S.rows[mod])); } catch (e) {}
+        done(null, d);
+      })
+      .catch(function (err) { done((err && err.message) || '保存失败'); });
+  }
+
+  function patchRow(mod, id, fields, done) {
+    db.from(TABLE).update({ data: fields }).eq('id', id).select()
+      .then(function (res) {
+        if (res.error) { done(res.error.message || '更新失败'); return; }
+        if (!res.data || !res.data.length) { done('更新被拒绝，请重试'); return; }
+        var rows = S.rows[mod] || [];
+        for (var i = 0; i < rows.length; i++) {
+          if (rows[i]._id === id) { Object.assign(rows[i], fields); break; }
+        }
+        try { localStorage.setItem(cacheKey(mod), JSON.stringify(rows)); } catch (e) {}
+        done(null);
+      })
+      .catch(function (err) { done((err && err.message) || '更新失败'); });
+  }
+
+  function delRow(mod, id, done) {
+    db.from(TABLE).delete().eq('id', id).select()
+      .then(function (res) {
+        if (res.error) { done(res.error.message || '删除失败'); return; }
+        if (!res.data || !res.data.length) { done('删除被拒绝，请重试'); return; }
+        S.rows[mod] = (S.rows[mod] || []).filter(function (r) { return r._id !== id; });
+        try { localStorage.setItem(cacheKey(mod), JSON.stringify(S.rows[mod])); } catch (e) {}
+        done(null);
+      })
+      .catch(function (err) { done((err && err.message) || '删除失败'); });
+  }
+
+  /* ================= 渲染 ================= */
+  function renderTabs() {
+    var host = $('tabs'); host.innerHTML = '';
+    var side = $('snav'); side.innerHTML = '';
+    ORDER.forEach(function (key) {
+      var on = S.current === key;
+      var b = elx('button', 'tab' + (on ? ' on' : ''), MODULES[key].emoji + ' ' + MODULES[key].title);
+      b.type = 'button';
+      b.onclick = function () { switchTo(key); };
+      host.appendChild(b);
+      var s = elx('button', 'sitem' + (on ? ' on' : ''));
+      s.type = 'button';
+      s.appendChild(elx('span', 'se', MODULES[key].emoji));
+      s.appendChild(elx('span', null, MODULES[key].title));
+      s.onclick = function () { switchTo(key); };
+      side.appendChild(s);
+    });
+  }
+
+  function fillGreet() {
+    var d = new Date(), h = d.getHours();
+    var g = h < 5 ? '夜深了' : h < 11 ? '早上好' : h < 14 ? '中午好' : h < 18 ? '下午好' : '晚上好';
+    $('greetTitle').textContent = g + '，慢慢来';
+    var week = ['日','一','二','三','四','五','六'][d.getDay()];
+    $('greetDate').textContent = (d.getMonth() + 1) + '月' + d.getDate() + '日 · 星期' + week;
+  }
+
+  function switchTo(key) {
+    S.current = key;
+    $('content').classList.toggle('dash', key === 'dashboard' || key === 'weather');
+    renderTabs();
+    showErr('');
+    var isWx = key === 'weather';
+    $('formCard').style.display = isWx ? 'none' : '';
+    $('listCard').style.display = isWx ? 'none' : '';
+    $('weatherCard').style.display = isWx ? '' : 'none';
+    if (isWx) { initWeather(); return; }
+    if (key === 'dashboard') { renderDashboard(); return; }
+    $('formCard').style.display = '';
+    $('formTitle').textContent = '新增 · ' + MODULES[key].title;
+    $('listTitle').textContent = MODULES[key].title + '记录';
+    buildForm(key);
+    renderStats(key);
+    load(key);
+  }
+
+  function statBox(host, label, value) {
+    var d = elx('div', 'stat');
+    d.appendChild(elx('span', null, label));
+    d.appendChild(elx('strong', null, value));
+    host.appendChild(d);
+  }
+
+  function renderStats(mod) {
+    var host = $('stats'); host.innerHTML = '';
+    var rows = S.rows[mod] || [];
+    var cfg = MODULES[mod];
+    if (mod === 'money') {
+      var out = 0, inc = 0;
+      rows.forEach(function (r) {
+        var v = Number(r['金额']) || 0;
+        if (r['类型'] === '收入') inc += v; else out += v;
+      });
+      statBox(host, '支出合计', money(out));
+      statBox(host, '收入合计', money(inc));
+      statBox(host, '笔数', rows.length + ' 笔');
+    } else if (mod === 'habit') {
+      var t = 0, today = todayStr();
+      rows.forEach(function (r) { if (String(r['日期'] || '').slice(0, 10) === today) t++; });
+      statBox(host, '打卡总数', rows.length + ' 次');
+      statBox(host, '今日打卡', t + ' 次');
+    } else if (cfg.doneField) {
+      var done = 0;
+      rows.forEach(function (r) { if (r[cfg.doneField]) done++; });
+      statBox(host, cfg.title, rows.length + ' 条');
+      statBox(host, '待办', (rows.length - done) + ' 条');
+      statBox(host, '已完成', done + ' 条');
+    } else if (mod === 'men') {
+      var ds = rows.map(function (r) { return String(r['开始日期'] || '').slice(0, 10); }).filter(Boolean).sort();
+      var avg = 0;
+      if (ds.length > 1) {
+        var sum = 0, n = 0;
+        for (var k = 1; k < ds.length; k++) {
+          var d = Math.round((new Date(ds[k]) - new Date(ds[k - 1])) / 86400000);
+          if (d > 0 && d < 120) { sum += d; n++; }
+        }
+        avg = n ? Math.round(sum / n) : 0;
+      }
+      statBox(host, '记录', rows.length + ' 条');
+      statBox(host, '平均周期', avg ? avg + ' 天' : '待累积');
+      statBox(host, '最近一次', ds.length ? ds[ds.length - 1] : '—');
+    } else if (mod === 'fit') {
+      var d7 = new Date(); d7.setDate(d7.getDate() - 6);
+      var from = d7.getFullYear() + '-' + ('0' + (d7.getMonth() + 1)).slice(-2) + '-' + ('0' + d7.getDate()).slice(-2);
+      var w = 0;
+      rows.forEach(function (r) { if (String(r['日期'] || '').slice(0, 10) >= from) w++; });
+      statBox(host, '运动次数', rows.length + ' 次');
+      statBox(host, '近 7 天', w + ' 次');
+    } else if (mod === 'media') {
+      var fin = 0;
+      rows.forEach(function (r) { if (r['状态'] === '已完成') fin++; });
+      statBox(host, '条目', rows.length + ' 条');
+      statBox(host, '已完成', fin + ' 条');
+    } else {
+      statBox(host, cfg.title, rows.length + ' 条');
+    }
+  }
+
+  function renderDashboard() {
+    $('formCard').style.display = 'none';
+    $('listTitle').textContent = '最近动态';
+    var host = $('stats'); host.innerHTML = '';
+    var today = todayStr();
+    var mods = ['money','habit','wish','med','checkup','men','fit','plan','shop','media'];
+    var pending = mods.filter(function (m) { return !S.rows[m]; });
+    if (pending.length) {
+      // 逐个拉取用于总览
+      pending.forEach(function (m) { load(m, { silent: true }); });
+      statBox(host, '总览', '加载中…');
+      setTimeout(function () { if (S.current === 'dashboard') renderDashboard(); }, 1200);
+      renderListEmpty('正在汇总各栏目数据…');
+      return;
+    }
+    var out = 0, inc = 0, hb = 0, todo = 0, wish = 0;
+    (S.rows.money || []).forEach(function (r) {
+      var v = Number(r['金额']) || 0;
+      if (String(r['日期'] || '').slice(0, 10) === today) { if (r['类型'] === '收入') inc += v; else out += v; }
+    });
+    (S.rows.habit || []).forEach(function (r) { if (String(r['日期'] || '').slice(0, 10) === today) hb++; });
+    (S.rows.plan || []).forEach(function (r) { if (!r['已完成']) todo++; });
+    (S.rows.wish || []).forEach(function (r) { if (!r['已完成']) wish++; });
+    statBox(host, '今日支出', money(out));
+    statBox(host, '今日收入', money(inc));
+    statBox(host, '今日打卡', hb + ' 次');
+    statBox(host, '待办日程', todo + ' 条');
+    statBox(host, '待打卡心愿', wish + ' 条');
+    // 最近动态：合并所有模块按 id 排前 8
+    var all = [];
+    mods.forEach(function (m) {
+      (S.rows[m] || []).forEach(function (r) { all.push({ m: m, r: r }); });
+    });
+    all.sort(function (a, b) { return (b.r._id || 0) - (a.r._id || 0); });
+    renderListRows(all.slice(0, 8).map(function (x) {
+      return { m: x.m, row: x.r, dash: true };
+    }));
+  }
+
+  function renderListEmpty(text) {
+    var box = $('state');
+    box.style.display = '';
+    box.innerHTML = '';
+    box.appendChild(elx('div', null, text));
+    $('list').innerHTML = '';
+  }
+
+  function buildForm(mod) {
+    var cfg = MODULES[mod];
+    var form = $('form');
+    form.innerHTML = '';
+    var grid = elx('div', 'grid');
+    cfg.fields.forEach(function (fd) {
+      var lab = elx('label', 'f' + (fd.wide ? ' wide' : ''));
+      lab.appendChild(elx('span', null, fd.label));
+      var input;
+      if (fd.type === 'select') {
+        input = document.createElement('select');
+        var o0 = document.createElement('option'); o0.value = ''; o0.textContent = '请选择';
+        input.appendChild(o0);
+        fd.options.forEach(function (op) {
+          var o = document.createElement('option'); o.value = op; o.textContent = op;
+          input.appendChild(o);
+        });
+      } else if (fd.type === 'date') {
+        input = document.createElement('input'); input.type = 'date';
+        if (fd.today) input.value = todayStr();
+      } else if (fd.type === 'number') {
+        input = document.createElement('input'); input.type = 'number'; input.step = '0.01'; input.inputMode = 'decimal';
+      } else {
+        input = document.createElement('input'); input.type = 'text';
+      }
+      if (fd.ph) input.placeholder = fd.ph;
+      input.setAttribute('data-field', fd.name);
+      lab.appendChild(input); grid.appendChild(lab);
+    });
+    form.appendChild(grid);
+    if (cfg.chips) {
+      Object.keys(cfg.chips).forEach(function (ck) {
+        var row = elx('div', 'chips');
+        cfg.chips[ck].forEach(function (val) {
+          var chip = elx('button', 'chip', '+ ' + val);
+          chip.type = 'button';
+          chip.onclick = function () {
+            var t = form.querySelector('[data-field="' + ck + '"]');
+            if (t) { t.value = val; saveDraft(); }
+          };
+          row.appendChild(chip);
+        });
+        form.appendChild(row);
+      });
+    }
+    var actions = elx('div', 'actions');
+    var submit = elx('button', 'primary', '保存');
+    submit.type = 'submit'; submit.id = 'submitBtn';
+    actions.appendChild(submit); form.appendChild(actions);
+    form.onsubmit = function (e) { e.preventDefault(); submitForm(mod); };
+    // 草稿
+    restoreDraft(mod);
+    var timer = null;
+    form.addEventListener('input', function () {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(function () { saveDraft(mod); }, 300);
+    });
+  }
+
+  function draftKey(mod) { return 'rjfree_draft_' + mod; }
+  function saveDraft(mod) {
+    try {
+      var form = $('form'), data = {};
+      form.querySelectorAll('[data-field]').forEach(function (n) {
+        data[n.getAttribute('data-field')] = n.value;
+      });
+      localStorage.setItem(draftKey(mod), JSON.stringify(data));
+    } catch (e) {}
+  }
+  function restoreDraft(mod) {
+    try {
+      var raw = localStorage.getItem(draftKey(mod));
+      if (!raw) return;
+      var data = JSON.parse(raw), form = $('form');
+      Object.keys(data).forEach(function (n) {
+        var node = form.querySelector('[data-field="' + n + '"]');
+        if (node && !node.value) node.value = data[n];
+      });
+    } catch (e) {}
+  }
+  function clearDraft(mod) { try { localStorage.removeItem(draftKey(mod)); } catch (e) {} }
+
+  function submitForm(mod) {
+    if (S.busy) return;
+    var form = $('form'), btn = $('submitBtn');
+    var data = {}, hasValue = false;
+    form.querySelectorAll('[data-field]').forEach(function (n) {
+      var v = n.value;
+      if (v === '' || v == null) return;
+      var name = n.getAttribute('data-field');
+      var fd = null;
+      MODULES[mod].fields.forEach(function (f) { if (f.name === name) fd = f; });
+      if (!fd) return;
+      if (fd.type === 'number') data[name] = parseFloat(v) || 0;
+      else data[name] = v;
+      hasValue = true;
+    });
+    if (!hasValue) { showMsg('err', '请至少填写一项内容'); return; }
+    S.busy = true; btn.disabled = true; btn.textContent = '保存中…'; showMsg('', '');
+    setSync('loading', '正在写入云端…');
+    addRow(mod, data, function (err) {
+      S.busy = false; btn.disabled = false; btn.textContent = '保存';
+      if (err) {
+        showMsg('err', '保存失败：' + err + '（内容已保留，可直接重试）');
+        setSync('err', '写入失败');
+        return;
+      }
+      clearDraft(mod);
+      // 日期字段重置为今天，其他清空
+      form.querySelectorAll('[data-field]').forEach(function (n) {
+        var name = n.getAttribute('data-field');
+        var fd = null;
+        MODULES[mod].fields.forEach(function (f) { if (f.name === name) fd = f; });
+        n.value = (fd && fd.type === 'date' && fd.today) ? todayStr() : '';
+      });
+      showMsg('ok', '已保存到云端'); setSync('ok', '已同步');
+      renderStats(mod); renderList(mod);
+    });
+  }
+
+  function rowLine(row, mod) {
+    var cfg = MODULES[mod];
+    var wrap = document.createElement('div');
+    function t(html) { var d = elx('div', 't'); d.innerHTML = html; return d; }
+    function m(html) { var d = elx('div', 'm'); d.innerHTML = html; return d; }
+    function n(html) { var d = elx('div', 'n'); d.innerHTML = html; return d; }
+    function tag(txt, cls) { return '<span class="tag ' + (cls || '') + '">' + esc(txt) + '</span>'; }
+    if (cfg.doneField && row[cfg.doneField]) wrap.parentNode && (wrap.parentNode.className = 'row done');
+    if (mod === 'money') {
+      var isIn = row['类型'] === '收入';
+      wrap.appendChild(t(esc(row['摘要'] || row['分类'] || '记账') + ' <span class="amt' + (isIn ? ' in' : '') + '">' + (isIn ? '+' : '-') + money(row['金额']) + '</span>' + (row['分类'] ? tag(row['分类']) : '')));
+      wrap.appendChild(m(esc(fmtDate(row['日期']))));
+      if (row['备注']) wrap.appendChild(n(esc(row['备注'])));
+    } else if (mod === 'habit') {
+      wrap.appendChild(t(esc(row['习惯名称'] || '习惯') + (row['打卡值'] ? tag(row['打卡值']) : '')));
+      wrap.appendChild(m(esc(fmtDate(row['日期']))));
+    } else if (mod === 'wish') {
+      wrap.appendChild(t(esc(row['名称'] || '心愿') + (row['分类'] ? tag(row['分类']) : '')));
+      wrap.appendChild(m(row['已完成'] ? '✓ ' + (fmtDate(row['打卡日期']) || '已打卡') : '待打卡'));
+      if (row['备注']) wrap.appendChild(n(esc(row['备注'])));
+    } else if (mod === 'med') {
+      wrap.appendChild(t(esc(row['病名'] || '病况') + (row['分期'] ? tag(row['分期'], 'stage') : '')));
+      var meta = [fmtDate(row['就诊日期'])];
+      if (row['医院']) meta.push(row['医院']);
+      wrap.appendChild(m(esc(meta.join(' · '))));
+      if (row['用药']) wrap.appendChild(n('💊 ' + esc(row['用药'])));
+      if (row['病情说明']) wrap.appendChild(n(esc(row['病情说明'])));
+    } else if (mod === 'checkup') {
+      wrap.appendChild(t(esc(row['标题'] || '报告') + (row['分类'] ? tag(row['分类']) : '')));
+      var cm = [fmtDate(row['日期'])];
+      if (row['机构']) cm.push(row['机构']);
+      wrap.appendChild(m(esc(cm.join(' · '))));
+      if (row['指标摘要']) wrap.appendChild(n(esc(row['指标摘要'])));
+      if (row['总结建议']) wrap.appendChild(n(esc(row['总结建议'])));
+    } else if (mod === 'men') {
+      wrap.appendChild(t(esc(fmtDate(row['开始日期']) || '—') + ' → ' + esc(fmtDate(row['结束日期']) || '进行中')));
+      if (row['症状']) wrap.appendChild(m('症状：' + esc(row['症状'])));
+      if (row['备注']) wrap.appendChild(n(esc(row['备注'])));
+    } else if (mod === 'fit') {
+      wrap.appendChild(t(esc(row['运动项目'] || '运动') + (row['时长'] ? tag(row['时长']) : '')));
+      wrap.appendChild(m(esc(fmtDate(row['日期']) + (row['消耗'] ? ' · 消耗 ' + row['消耗'] : ''))));
+    } else if (mod === 'plan') {
+      wrap.appendChild(t(esc(row['事项'] || '日程') + (row['优先级'] ? tag(row['优先级'], 'stage') : '')));
+      wrap.appendChild(m(row['已完成'] ? '✓ ' + (fmtDate(row['完成日期']) || '已完成') : esc(fmtDate(row['日期']) + (row['时间'] ? ' ' + row['时间'] : ''))));
+      if (row['备注']) wrap.appendChild(n(esc(row['备注'])));
+    } else if (mod === 'shop') {
+      wrap.appendChild(t(esc(row['物品'] || '待买') + (row['分类'] ? tag(row['分类']) : '') + ' <span class="amt">' + money(row['预算']) + '</span>'));
+      wrap.appendChild(m(row['已购'] ? '✓ 已购 ' + fmtDate(row['购买日期']) : '待买'));
+      if (row['备注']) wrap.appendChild(n(esc(row['备注'])));
+    } else if (mod === 'media') {
+      wrap.appendChild(t(esc(row['标题'] || '未命名') + (row['类型'] ? tag(row['类型']) : '') + (row['状态'] ? tag(row['状态'], 'stage') : '') + (row['评分'] ? tag('★ ' + row['评分']) : '')));
+      wrap.appendChild(m(esc(fmtDate(row['日期']))));
+      if (row['感想']) wrap.appendChild(n(esc(row['感想'])));
+    } else {
+      wrap.appendChild(t(JSON.stringify(row).slice(0, 80)));
+    }
+    return wrap;
+  }
+
+  function renderList(mod) {
+    if (S.current !== mod) return;
+    var ul = $('list');
+    var box = $('state');
+    ul.innerHTML = '';
+    if (S.error[mod]) {
+      box.style.display = '';
+      box.innerHTML = '';
+      box.appendChild(elx('div', null, '⚠ ' + S.error[mod]));
+      var retry = elx('button', 'ghost', '重试');
+      retry.type = 'button'; retry.style.marginTop = '10px';
+      retry.onclick = function () { showErr(''); load(mod); };
+      box.appendChild(retry);
+      return;
+    }
+    var rows = S.rows[mod];
+    if (rows == null) { renderListEmpty('正在读取云端数据…'); return; }
+    if (!rows.length) { renderListEmpty('暂无记录，用上面的表单添加第一条'); return; }
+    box.style.display = 'none';
+    rows.forEach(function (row) { ul.appendChild(buildRow(mod, row)); });
+  }
+
+  function buildRow(mod, row) {
+    var cfg = MODULES[mod];
+    var li = elx('li', 'row');
+    if (cfg.doneField) {
+      var tick = elx('button', 'tick' + (row[cfg.doneField] ? ' on' : ''), '✓');
+      tick.type = 'button';
+      tick.onclick = function () {
+        var next = !row[cfg.doneField];
+        tick.disabled = true;
+        var fields = Object.assign({}, row); delete fields._id;
+        fields[cfg.doneField] = next;
+        if (next && cfg.doneDate) fields[cfg.doneDate] = todayStr();
+        patchRow(mod, row._id, fields, function (err) {
+          tick.disabled = false;
+          if (err) { showMsg('err', '更新失败：' + err); return; }
+          load(mod);
+        });
+      };
+      li.appendChild(tick);
+    }
+    var main = elx('div', 'main');
+    var inner = rowLine(row, mod);
+    while (inner.firstChild) main.appendChild(inner.firstChild);
+    if (cfg.doneField && row[cfg.doneField]) li.className = 'row done';
+    li.appendChild(main);
+    var del = elx('button', 'del', '×');
+    del.type = 'button'; del.title = '删除';
+    del.onclick = function () {
+      if (!window.confirm('确定删除这条记录吗？删除后无法恢复。')) return;
+      del.disabled = true;
+      delRow(mod, row._id, function (err) {
+        if (err) { del.disabled = false; showMsg('err', '删除失败：' + err); return; }
+        renderStats(mod); renderList(mod);
+      });
+    };
+    li.appendChild(del);
+    return li;
+  }
+
+  function renderListRows(items) {
+    var ul = $('list'); ul.innerHTML = '';
+    var box = $('state'); box.style.display = 'none';
+    items.forEach(function (x) {
+      var li = elx('li', 'row');
+      var main = elx('div', 'main');
+      var inner = rowLine(x.row, x.m);
+      while (inner.firstChild) main.appendChild(inner.firstChild);
+      var badge = elx('span', 'tag', MODULES[x.m].emoji + ' ' + MODULES[x.m].title);
+      main.insertBefore(badge, main.firstChild);
+      li.appendChild(main);
+      ul.appendChild(li);
+    });
+  }
+
+  /* ================= 天气 ================= */
+  var WX = { inited: false, busy: false };
+  function wmoInfo(c) {
+    var map = { 0:['晴','☀️'], 1:['大致晴','🌤'], 2:['多云','⛅'], 3:['阴','☁️'],
+      45:['有雾','🌫'], 48:['雾凇','🌫'], 51:['毛毛雨','🌦'], 53:['毛毛雨','🌦'], 55:['毛毛雨','🌦'],
+      61:['小雨','🌧'], 63:['中雨','🌧'], 65:['大雨','🌧'], 66:['冻雨','🌧'], 67:['冻雨','🌧'],
+      71:['小雪','🌨'], 73:['中雪','🌨'], 75:['大雪','❄️'], 77:['雪粒','🌨'],
+      80:['阵雨','🌦'], 81:['阵雨','🌦'], 82:['强阵雨','⛈'], 85:['阵雪','🌨'], 86:['阵雪','🌨'],
+      95:['雷阵雨','⛈'], 96:['雷雨伴冰雹','⛈'], 99:['雷雨伴冰雹','⛈'] };
+    return map[c] || ['—','🌡'];
+  }
+  function setWxStatus(text, isErr) {
+    var s = $('wxStatus');
+    s.textContent = text || '';
+    s.className = isErr ? 'err' : '';
+  }
+  function initWeather() {
+    if (WX.inited) return;
+    WX.inited = true;
+    $('wxRetry').onclick = function () { WX.inited = false; locateWeather(true); };
+    // 本次会话已定位过且有缓存：直接用缓存，不再自动定位（防闪动）
+    var located = false;
+    try { located = !!sessionStorage.getItem('rjfree_wx_loc'); } catch (e) {}
+    var hasCache = false;
+    try { hasCache = !!localStorage.getItem('rjfree_wx'); } catch (e) {}
+    if (located && hasCache) {
+      try { renderWx(JSON.parse(localStorage.getItem('rjfree_wx'))); } catch (e) {}
+      return;
+    }
+    locateWeather(false);
+  }
+  function locateWeather(force) {
+    if (WX.busy) return;
+    WX.busy = true;
+    setWxStatus('正在定位…');
+    var done = false;
+    function finish(lat, lon, label) {
+      if (done) return; done = true; WX.busy = false;
+      try { sessionStorage.setItem('rjfree_wx_loc', '1'); } catch (e) {}
+      fetchWx(lat, lon, label);
+    }
+    function fallbackDefault() { finish(23.0218, 113.1219, '佛山'); }
+    function finishByIp() {
+      fetch('https://api.bigdatacloud.net/data/client-info')
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d && d.latitude && d.longitude) finish(d.latitude, d.longitude, d.city || d.locality || '');
+          else fallbackDefault();
+        })
+        .catch(fallbackDefault);
+    }
+    if (navigator.geolocation) {
+      var timer = setTimeout(finishByIp, 8000);
+      navigator.geolocation.getCurrentPosition(
+        function (p) { clearTimeout(timer); finish(p.coords.latitude, p.coords.longitude, ''); },
+        function () { clearTimeout(timer); finishByIp(); },
+        { timeout: 7500, maximumAge: 600000 }
+      );
+    } else finishByIp();
+  }
+  function fetchWx(lat, lon, label) {
+    setWxStatus('正在获取天气…');
+    var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon +
+      '&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code' +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=5';
+    fetch(url)
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.current) { setWxStatus('天气数据异常，请点「重新定位」重试', true); return; }
+        var pack = { lat: lat, lon: lon, label: label, wx: d, t: Date.now() };
+        if (label !== '') { renderWx(pack); return; }
+        fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=zh')
+          .then(function (r) { return r.json(); })
+          .then(function (g) {
+            pack.label = (g && (g.city || g.locality || g.principalSubdivision)) || '';
+            renderWx(pack);
+          })
+          .catch(function () { renderWx(pack); });
+      })
+      .catch(function () { setWxStatus('天气获取失败（网络问题），请点「重新定位」重试', true); });
+  }
+  function renderWx(pack) {
+    var d = pack.wx;
+    var cur = d.current, daily = d.daily;
+    var info = wmoInfo(cur.weather_code);
+    var body = $('wxBody');
+    var html = '';
+    html += '<div class="wxnow">';
+    html += '<span class="ico">' + info[1] + '</span>';
+    html += '<span class="big">' + Math.round(cur.temperature_2m) + '°</span>';
+    html += '<div><div class="desc">' + info[0] + '</div>';
+    html += '<div class="meta">湿度 ' + cur.relative_humidity_2m + '% · 风速 ' + Math.round(cur.wind_speed_10m) + ' km/h</div></div>';
+    html += '</div>';
+    html += '<div class="wxdays">';
+    for (var i = 0; i < daily.time.length && i < 5; i++) {
+      var di = wmoInfo(daily.weather_code[i]);
+      var dt = new Date(daily.time[i] + 'T00:00:00');
+      var week = ['日','一','二','三','四','五','六'][dt.getDay()];
+      html += '<div class="wxday">' + (i === 0 ? '今天' : '周' + week) +
+        '<span class="e">' + di[1] + '</span>' + di[0] +
+        '<div class="range">' + Math.round(daily.temperature_2m_min[i]) + '° / ' + Math.round(daily.temperature_2m_max[i]) + '°</div>' +
+        (daily.precipitation_probability_max && daily.precipitation_probability_max[i] != null ? '<div class="rain">降水 ' + daily.precipitation_probability_max[i] + '%</div>' : '') +
+        '</div>';
+    }
+    html += '</div>';
+    body.innerHTML = html;
+    $('wxCity').textContent = '天气 · ' + (pack.label || '当前位置');
+    setWxStatus('更新于 ' + new Date(pack.t).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }));
+    try { localStorage.setItem('rjfree_wx', JSON.stringify(pack)); } catch (e) {}
+  }
+
+  /* ================= 启动 ================= */
+  function boot() {
+    fillGreet();
+    renderTabs();
+    switchTo(S.current === 'dashboard' ? 'dashboard' : S.current);
+    setSync('ok', '已连接云端');
+  }
+
+  $('passBtn').onclick = unlock;
+  $('passInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') unlock(); });
+  $('retryBtn').onclick = function () { showErr(''); load(S.current); };
+
+  if (passOk()) {
+    $('lock').classList.add('hide');
+    $('app').style.display = '';
+    boot();
+  }
+})();
+</script>
+</body>
+</html>

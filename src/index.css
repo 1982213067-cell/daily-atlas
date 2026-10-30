@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f5f0e8;
+  --card: #fffdfa;
+  --ink: #29251f;
+  --muted: #746d63;
+  --line: #ded5c8;
+  
+  --plum: #4d3045;
+  --plum-soft: #e8dfe5;
+  --terra: #b65f42;
+  --terra-soft: #f3dfd6;
+  --sage: #627a67;
+  --sage-soft: #dfe8df;
+  --sand: #a57c45;
+  --sand-soft: #eee2ce;
+  
+  --accent: var(--plum);
+  --accent-soft: var(--plum-soft);
+
+  --red: #b44d43;
+  --green: #477358;
+  --shadow: 0 16px 40px rgba(63, 48, 36, 0.07);
+  --radius: 22px;
+  --sidebar: 256px;
+}
+
+[data-theme="plum"] {
+  --accent: #4d3045;
+  --accent-soft: #e8dfe5;
+}
+
+[data-theme="terra"] {
+  --accent: #b65f42;
+  --accent-soft: #f3dfd6;
+}
+
+[data-theme="sage"] {
+  --accent: #627a67;
+  --accent-soft: #dfe8df;
+}
+
+[data-theme="sand"] {
+  --accent: #a57c45;
+  --accent-soft: #eee2ce;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background-color: var(--paper);
+  color: var(--ink);
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+.font-serif-sc {
+  font-family: 'Noto Serif SC', "Songti SC", STSong, "SimSun", Georgia, serif;
+}
+
+/* Custom subtle scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(116, 109, 99, 0.2);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(116, 109, 99, 0.35);
+}
+
+/* Shimmer / pulse subtle animations */
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.animate-pulse-subtle {
+  animation: pulseSubtle 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
