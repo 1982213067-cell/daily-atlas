@@ -12,6 +12,6 @@ cloudflared.exe
 cloudflared
 
 # 本地数据与临时产物（含个人数据，绝不入库；线上以云库为准）
-data/
+/data/
 .deploy/
 .tmp_imp/
